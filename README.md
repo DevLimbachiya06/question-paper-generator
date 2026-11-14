@@ -17,6 +17,13 @@ The application currently uses the tracked starter workbook as a read-only
 fallback question bank. Uploaded workbooks are parsed securely on the server
 and used for the current browser session.
 
+The paper builder starts with a CBSE Grade 10 five-section blueprint:
+20 one-mark objective questions, 5 two-mark questions, 6 three-mark
+questions, 4 five-mark questions, and 3 four-mark case-study questions
+(80 marks). Other maximum-mark values are rounded to a whole number and
+adapted proportionally while preserving the exact total. Editing the blueprint
+automatically updates the maximum marks.
+
 ## Local development
 
 Requirements: Node.js 20.9 or newer.

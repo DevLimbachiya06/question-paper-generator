@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createCbseBlueprint, normalizeMarks } from "@/lib/cbse-blueprint";
 import type { BlueprintSection, Question } from "@/types/question";
 
 type Paper = {
@@ -14,16 +15,6 @@ type Paper = {
 
 const questionTypes = ["MCQ", "Very Short Answer", "Short Answer", "Long Answer", "Case Study"];
 
-function newSection(index: number): BlueprintSection {
-  return {
-    id: crypto.randomUUID(),
-    name: `Section ${String.fromCharCode(65 + index)}`,
-    questionType: index === 0 ? "MCQ" : "Very Short Answer",
-    questionCount: index === 0 ? 5 : 2,
-    marksPerQuestion: 1,
-  };
-}
-
 export default function HomePage() {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
@@ -34,8 +25,8 @@ export default function HomePage() {
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [paperName, setPaperName] = useState("CBSE Sample Paper");
-  const [totalMarks, setTotalMarks] = useState(9);
-  const [sections, setSections] = useState<BlueprintSection[]>([newSection(0), newSection(1)]);
+  const [totalMarks, setTotalMarks] = useState(80);
+  const [sections, setSections] = useState<BlueprintSection[]>(() => createCbseBlueprint("", 80));
   const [questions, setQuestions] = useState<Question[] | undefined>();
   const [paper, setPaper] = useState<Paper | null>(null);
   const [message, setMessage] = useState("");
@@ -60,6 +51,7 @@ export default function HomePage() {
         setSubjects(data.subjects || []);
         const firstSubject = data.subjects?.[0] || "";
         setSubject(firstSubject);
+        setSections(createCbseBlueprint(firstSubject, 80));
         if (firstSubject) loadMetadata(firstSubject);
       })
       .catch(() => setMessage("The question bank could not be loaded."));
@@ -69,12 +61,29 @@ export default function HomePage() {
     () => sections.reduce((sum, section) => sum + section.questionCount * section.marksPerQuestion, 0),
     [sections],
   );
+  const previewSections = useMemo(() => {
+    if (!paper) return [];
+    let questionIndex = 0;
+    return paper.blueprint.map((section) => {
+      const sectionQuestions = paper.questions.slice(questionIndex, questionIndex + section.questionCount);
+      questionIndex += sectionQuestions.length;
+      return { section, questions: sectionQuestions };
+    });
+  }, [paper]);
 
   function changeSubject(nextSubject: string) {
     setSubject(nextSubject);
+    setSections(createCbseBlueprint(nextSubject, totalMarks));
     setSelectedChapters([]);
     setSelectedTopics([]);
     loadMetadata(nextSubject);
+  }
+
+  function changeTotalMarks(value: number) {
+    const nextTotal = normalizeMarks(value);
+    setTotalMarks(nextTotal);
+    setSections(createCbseBlueprint(subject, nextTotal));
+    setPaper(null);
   }
 
   function toggleChapter(chapter: string) {
@@ -87,7 +96,16 @@ export default function HomePage() {
   }
 
   function updateSection(id: string, patch: Partial<BlueprintSection>) {
-    setSections((current) => current.map((section) => section.id === id ? { ...section, ...patch } : section));
+    const next = sections.map((section) => section.id === id ? { ...section, ...patch } : section);
+    setSections(next);
+    setTotalMarks(next.reduce((sum, section) => sum + section.questionCount * section.marksPerQuestion, 0));
+    setPaper(null);
+  }
+
+  function replaceSections(next: BlueprintSection[]) {
+    setSections(next);
+    setTotalMarks(next.reduce((sum, section) => sum + section.questionCount * section.marksPerQuestion, 0));
+    setPaper(null);
   }
 
   async function generate() {
@@ -135,6 +153,7 @@ export default function HomePage() {
     setSubjects(importedSubjects);
     const importedSubject = importedSubjects[0] || "";
     setSubject(importedSubject);
+    setSections(createCbseBlueprint(importedSubject, totalMarks));
     setSelectedChapters([]);
     setSelectedTopics([]);
     await loadMetadata(importedSubject);
@@ -220,7 +239,7 @@ export default function HomePage() {
               <section className="panel grid gap-4 p-5 md:grid-cols-3">
                 <label className="text-sm font-bold">Paper name<input className="field mt-2" value={paperName} onChange={(event) => setPaperName(event.target.value)} /></label>
                 <label className="text-sm font-bold">Subject<select className="field mt-2" value={subject} onChange={(event) => changeSubject(event.target.value)}>{subjects.map((value) => <option key={value}>{value}</option>)}</select></label>
-                <label className="text-sm font-bold">Maximum marks<input className="field mt-2" type="number" min={1} value={totalMarks} onChange={(event) => setTotalMarks(Number(event.target.value))} /></label>
+                <label className="text-sm font-bold">Maximum marks<input className="field mt-2" type="number" min={1} value={totalMarks} onChange={(event) => changeTotalMarks(Number(event.target.value))} /></label>
               </section>
 
               <section className="panel p-5">
@@ -244,14 +263,14 @@ export default function HomePage() {
               </section>
 
               <section className="panel p-5">
-                <div className="flex items-center justify-between gap-4"><div><h3 className="text-lg font-bold">Editable blueprint</h3><p className="mt-1 text-sm text-slate-500">The total must equal {totalMarks} marks.</p></div><button className="btn btn-secondary text-sm" onClick={() => setSections([...sections, newSection(sections.length)])}>Add section</button></div>
+                <div className="flex items-center justify-between gap-4"><div><h3 className="text-lg font-bold">CBSE blueprint <span className="font-normal text-slate-400">(editable)</span></h3><p className="mt-1 text-sm text-slate-500">Starts with the CBSE Grade 10 five-section pattern. Editing a section updates the maximum marks.</p></div><button className="btn btn-secondary text-sm" onClick={() => replaceSections([...sections, { id: crypto.randomUUID(), name: `Section ${String.fromCharCode(65 + sections.length)}`, questionType: "Short Answer", questionCount: 1, marksPerQuestion: 3 }])}>Add section</button></div>
                 <div className="mt-4 space-y-3">
                   {sections.map((section) => <div key={section.id} className="grid gap-2 rounded-xl bg-slate-50 p-3 md:grid-cols-[1.2fr_1.2fr_100px_100px_auto] md:items-end">
                     <label className="text-xs font-bold text-slate-500">Section<input className="field mt-1 bg-white text-sm" value={section.name} onChange={(event) => updateSection(section.id, { name: event.target.value })} /></label>
                     <label className="text-xs font-bold text-slate-500">Question type<select className="field mt-1 bg-white text-sm" value={section.questionType} onChange={(event) => updateSection(section.id, { questionType: event.target.value })}>{questionTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
                     <label className="text-xs font-bold text-slate-500">Count<input className="field mt-1 bg-white text-sm" type="number" min={0} value={section.questionCount} onChange={(event) => updateSection(section.id, { questionCount: Number(event.target.value) })} /></label>
                     <label className="text-xs font-bold text-slate-500">Marks<input className="field mt-1 bg-white text-sm" type="number" min={1} value={section.marksPerQuestion} onChange={(event) => updateSection(section.id, { marksPerQuestion: Number(event.target.value) })} /></label>
-                    <button className="rounded-lg px-2 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50" onClick={() => setSections(sections.filter((value) => value.id !== section.id))}>Remove</button>
+                    <button className="rounded-lg px-2 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50" onClick={() => replaceSections(sections.filter((value) => value.id !== section.id))}>Remove</button>
                   </div>)}
                 </div>
                 <div className={`mt-4 text-right text-sm font-bold ${blueprintMarks === totalMarks ? "text-emerald-600" : "text-rose-600"}`}>Blueprint total: {blueprintMarks} / {totalMarks}</div>
@@ -268,7 +287,7 @@ export default function HomePage() {
             <aside className="panel h-fit overflow-hidden xl:sticky xl:top-8">
               <div className="border-b border-slate-100 bg-slate-50 p-5"><div className="eyebrow">Live preview</div><h3 className="mt-2 text-xl font-bold">{paper?.name || paperName}</h3><p className="mt-1 text-sm text-slate-500">{subject || "Select a subject"} · {paper?.totalMarks || totalMarks} marks</p></div>
               <div className="max-h-[70vh] overflow-y-auto p-5">
-                {paper ? paper.questions.map((question, index) => <article key={`${question.id}-${index}`} className="border-b border-slate-100 py-4 first:pt-0 last:border-0"><div className="flex justify-between gap-3 text-xs font-bold text-indigo-600"><span>Q{index + 1}</span><span>{question.marks} marks</span></div><p className="mt-2 text-sm leading-6">{question.text}</p>{question.options.filter(Boolean).length > 0 && <ol className="mt-2 space-y-1 text-sm text-slate-500">{question.options.filter(Boolean).map((option, optionIndex) => <li key={option}><span className="mr-2 font-bold">{String.fromCharCode(65 + optionIndex)}.</span>{option}</li>)}</ol>}</article>) : <div className="py-12 text-center text-sm leading-6 text-slate-400">Your generated questions will appear here. Adjust the blueprint and select Generate paper.</div>}
+                {paper ? previewSections.map(({ section, questions: sectionQuestions }) => <div key={section.id} className="mb-5 last:mb-0"><h4 className="border-b border-indigo-100 pb-2 text-sm font-bold text-indigo-700">{section.name}</h4>{sectionQuestions.map((question, index) => <article key={`${question.id}-${index}`} className="border-b border-slate-100 py-4 last:border-0"><div className="flex justify-between gap-3 text-xs font-bold text-indigo-600"><span>Q{paper.questions.indexOf(question) + 1}</span><span>{question.marks} marks</span></div><p className="mt-2 text-sm leading-6">{question.text}</p>{question.options.filter(Boolean).length > 0 && <ol className="mt-2 space-y-1 text-sm text-slate-500">{question.options.filter(Boolean).map((option, optionIndex) => <li key={option}><span className="mr-2 font-bold">{String.fromCharCode(65 + optionIndex)}.</span>{option}</li>)}</ol>}</article>)}</div>) : <div className="py-12 text-center text-sm leading-6 text-slate-400">Your generated questions will appear here. Adjust the blueprint and select Generate paper.</div>}
               </div>
             </aside>
           </div>
