@@ -82,26 +82,33 @@ def create_app():
         subject = request.args.get('subject', '')
         db = get_db()
         rows = db.execute(
-            "SELECT DISTINCT chapter FROM questions WHERE active = 1 AND subject = ? ORDER BY chapter",
+            "SELECT chapter, COUNT(*) AS question_count FROM questions "
+            "WHERE active = 1 AND subject = ? GROUP BY chapter ORDER BY chapter",
             (subject,)
         ).fetchall()
         db.close()
-        return jsonify({'chapters': [r[0] for r in rows]})
+        return jsonify({
+            'chapters': [r['chapter'] for r in rows],
+            'chapter_counts': {r['chapter']: r['question_count'] for r in rows},
+        })
 
     @app.route('/api/topics')
     def api_topics():
         subject = request.args.get('subject', '')
         chapters = [value for value in request.args.getlist('chapter') if value]
         db = get_db()
-        query = 'SELECT DISTINCT topic FROM questions WHERE active = 1 AND subject = ? AND topic != ""'
+        query = 'SELECT topic, COUNT(*) AS question_count FROM questions WHERE active = 1 AND subject = ? AND topic != ""'
         params = [subject]
         if chapters:
             placeholders = ', '.join('?' for _ in chapters)
             query += f' AND chapter IN ({placeholders})'
             params.extend(chapters)
-        rows = db.execute(query + ' ORDER BY topic', params).fetchall()
+        rows = db.execute(query + ' GROUP BY topic ORDER BY topic', params).fetchall()
         db.close()
-        return jsonify({'topics': [r[0] for r in rows]})
+        return jsonify({
+            'topics': [r['topic'] for r in rows],
+            'topic_counts': {r['topic']: r['question_count'] for r in rows},
+        })
 
     @app.route('/api/generate', methods=['POST'])
     def api_generate():

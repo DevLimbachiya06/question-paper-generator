@@ -226,6 +226,10 @@ button:hover, .secondary-link:hover {
   height: 18px;
 }
 
+.chapter-item small {
+  color: var(--muted);
+}
+
 .blueprint-item strong {
   color: var(--primary-deep);
 }

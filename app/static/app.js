@@ -43,11 +43,12 @@ async function loadChapters(subject) {
     return;
   }
 
+  const chapterCounts = data.chapter_counts || {};
   chapterList.innerHTML = data.chapters.map(chapter => `
     <div class="chapter-item">
       <label>
         <input type="checkbox" checked value="${chapter}" />
-        <span>${chapter}</span>
+        <span>${chapter} <small>(${chapterCounts[chapter] || 0} questions)</small></span>
       </label>
     </div>
   `).join('');
@@ -61,8 +62,9 @@ async function loadTopics() {
     .map(el => `chapter=${encodeURIComponent(el.value)}`).join('&');
   const res = await fetch(`/api/topics?subject=${encodeURIComponent(subjectSelect.value)}&${selectedChapters}`);
   const data = await res.json();
+  const topicCounts = data.topic_counts || {};
   topicList.innerHTML = data.topics && data.topics.length
-    ? data.topics.map(topic => `<div class="chapter-item"><label><input type="checkbox" checked value="${topic}" /><span>${topic}</span></label></div>`).join('')
+    ? data.topics.map(topic => `<div class="chapter-item"><label><input type="checkbox" checked value="${topic}" /><span>${topic} <small>(${topicCounts[topic] || 0} questions)</small></label></div>`).join('')
     : '<p>No topics found for the selected chapters. All topics will be used.</p>';
 }
 

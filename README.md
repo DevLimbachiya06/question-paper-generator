@@ -57,7 +57,7 @@ Then open <http://localhost:5000>. Local runtime data is stored in `data/`. Set 
 
 ## Using the application
 
-1. Select a subject, one or more chapters, and optionally filter by topics. Banks containing only a topic or a single chapter are supported.
+1. Select a subject, one or more chapters, and optionally filter by topics. The selector shows the number of active questions available for each chapter/topic. Banks containing only a topic or a single chapter are supported.
 2. Set the paper name and maximum marks.
 3. Edit the blueprint rows, including section name, question type, question count, and marks per question. Add or remove sections as needed.
 4. Generate the paper.

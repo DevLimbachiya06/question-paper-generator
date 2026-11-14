@@ -46,7 +46,15 @@ class AppSmokeTest(unittest.TestCase):
         result = import_question_bank(str(path))
         self.assertTrue(result['success'])
         response = self.client.get('/api/topics?subject=Physics&chapter=Motion')
-        self.assertEqual(response.json, {'topics': ['Motion']})
+        self.assertEqual(response.json, {
+            'topics': ['Motion'],
+            'topic_counts': {'Motion': 1},
+        })
+
+    def test_chapter_endpoint_includes_question_counts(self):
+        response = self.client.get('/api/chapters?subject=Physics')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('chapter_counts', response.json)
 
     def test_generation_respects_custom_maximum_marks(self):
         workbook = Workbook()
