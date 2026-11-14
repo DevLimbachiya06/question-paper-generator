@@ -12,12 +12,13 @@ export async function GET(request: Request) {
   const filtered = selectedChapters.length
     ? questions.filter((question) => selectedChapters.includes(question.chapter))
     : questions;
+  const chapters = getChapters(bank, subject);
 
   return NextResponse.json({
     subjects: getSubjects(bank),
-    chapters: getChapters(bank, subject),
+    chapters,
     topics: [...new Set(filtered.map((question) => question.topic).filter(Boolean))].sort(),
-    chapterCounts: Object.fromEntries([...new Set(questions.map((question) => question.chapter))].map((chapter) => [
+    chapterCounts: Object.fromEntries(chapters.map((chapter) => [
       chapter,
       questions.filter((question) => question.chapter === chapter).length,
     ])),

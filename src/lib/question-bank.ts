@@ -40,6 +40,25 @@ const canonicalChapters: Record<string, string[]> = {
     "Magnetic Effects of Electric Current",
     "Our Environment",
   ],
+  physics: [
+    "Light - Reflection and Refraction",
+    "Human Eye and Colourful World",
+    "Electricity",
+    "Magnetic Effects of Electric Current",
+  ],
+  chemistry: [
+    "Chemical Reactions and Equations",
+    "Acids, Bases and Salts",
+    "Metals and Non-metals",
+    "Carbon and Its Compounds",
+  ],
+  biology: [
+    "Life Processes",
+    "Control and Coordination",
+    "How do Organisms Reproduce?",
+    "Heredity",
+    "Our Environment",
+  ],
   sst: [
     "The Rise of Nationalism in Europe",
     "Nationalism in India",
@@ -72,6 +91,7 @@ const canonicalChapters: Record<string, string[]> = {
     "A Letter to God",
     "Nelson Mandela - Long Walk to Freedom",
     "Stories About Flying",
+    "Glimpses of India",
     "From the Diary of Anne Frank",
     "Glimpses of India",
     "Mijbil the Otter",
@@ -85,6 +105,7 @@ const canonicalChapters: Record<string, string[]> = {
     "The Ball Poem",
     "Amanda!",
     "The Trees",
+    "Animals",
     "Fog",
     "The Tale of Custard the Dragon",
     "For Anne Gregory",
@@ -97,6 +118,7 @@ const canonicalChapters: Record<string, string[]> = {
     "The Necklace",
     "Bholi",
     "The Book That Saved the Earth",
+    "The Hundred Dresses I & II",
     "Legacy / outside current syllabus",
   ],
 };
@@ -179,8 +201,13 @@ export function getChapters(questions: Question[], subject: string): string[] {
     : key === "sst" ? "sst"
       : key.includes("english") ? "english"
         : key;
-  const existing = questions
-    .filter((question) => subjectMatches(question.subject, subject))
-    .map((question) => question.chapter);
-  return [...new Set([...(canonicalChapters[catalogKey] || []), ...existing])].sort();
+  const syllabus = canonicalChapters[catalogKey] || [];
+  const hasLegacy = questions.some(
+    (question) => subjectMatches(question.subject, subject)
+      && question.chapter === "Legacy / outside current syllabus",
+  );
+  return [...new Set([
+    ...syllabus,
+    ...(hasLegacy ? ["Legacy / outside current syllabus"] : []),
+  ])].sort();
 }
