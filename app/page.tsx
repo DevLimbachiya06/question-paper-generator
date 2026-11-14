@@ -160,6 +160,25 @@ export default function HomePage() {
     URL.revokeObjectURL(url);
   }
 
+  async function downloadAnswerKey() {
+    if (!paper) return;
+    const response = await fetch("/api/answer-key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paper),
+    });
+    if (!response.ok) {
+      setMessage("The answer key could not be generated.");
+      return;
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${paper.name.replace(/[^a-z0-9-_ ]/gi, "").trim() || "question-paper"}-answer-key.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main className="min-h-screen">
       <div className="mx-auto grid max-w-[1500px] gap-6 p-4 lg:grid-cols-[320px_1fr] lg:p-8">
@@ -241,6 +260,7 @@ export default function HomePage() {
               <div className="flex flex-wrap items-center gap-3">
                 <button className="btn btn-primary" disabled={loading} onClick={generate}>{loading ? "Generating..." : "Generate paper"}</button>
                 {paper && <button className="btn btn-dark" onClick={downloadPdf}>Download PDF</button>}
+                {paper && <button className="btn btn-secondary" onClick={downloadAnswerKey}>Download answer key</button>}
                 {message && <p className="text-sm font-semibold text-slate-600">{message}</p>}
               </div>
             </div>

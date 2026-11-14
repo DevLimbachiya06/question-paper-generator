@@ -70,6 +70,7 @@ Do not use SQLite, `uploads/`, or `generated/` as durable storage on Vercel.
 - `POST /api/upload` — validates and parses an `.xlsx` workbook
 - `POST /api/generate` — validates the blueprint and generates a paper
 - `POST /api/pdf` — returns a formatted PDF download
+- `POST /api/answer-key` — returns a formatted answer-key PDF download
 
 The generator requires the blueprint total to exactly match the requested
 maximum marks and returns a user-safe error when there are not enough matching
@@ -88,9 +89,9 @@ Optional columns include `Chapter`, `Topic`, `Difficulty`, `Option_A` through
 
 ## Legacy Flask implementation
 
-The original Flask implementation remains in the repository for reference and
-local compatibility. The Vercel deployment entrypoint is now the Next.js
-application in the root `app/` directory.
+The original Flask implementation is archived under [`legacy/flask/`](./legacy/flask/)
+for reference. It is not part of the Vercel deployment; the deployment entrypoint
+is the Next.js application in the root [`app/`](./app/) directory.
 
 ## License
 

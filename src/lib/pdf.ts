@@ -4,17 +4,27 @@ type Paper = {
   name: string;
   subject: string;
   totalMarks: number;
-  questions: Array<{ text: string; marks: number; options: string[] }>;
+  questions: Array<{
+    text: string;
+    marks: number;
+    options: string[];
+    correctAnswer?: string;
+    answerKey?: string;
+  }>;
 };
 
-export function createPdf(paper: Paper): Promise<Buffer> {
+function collectPdf(document: PDFKit.PDFDocument): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const document = new PDFDocument({ margin: 54 });
     const chunks: Buffer[] = [];
     document.on("data", (chunk: Buffer) => chunks.push(chunk));
     document.on("end", () => resolve(Buffer.concat(chunks)));
     document.on("error", reject);
+  });
+}
 
+export async function createPdf(paper: Paper): Promise<Buffer> {
+  const document = new PDFDocument({ margin: 54 });
+  const result = collectPdf(document);
     document.fontSize(20).font("Helvetica-Bold").text(paper.name, { align: "center" });
     document.moveDown(0.5).fontSize(11).font("Helvetica")
       .text(`Subject: ${paper.subject}    Maximum Marks: ${paper.totalMarks}`, { align: "center" });
@@ -29,5 +39,27 @@ export function createPdf(paper: Paper): Promise<Buffer> {
       document.moveDown(0.7);
     });
     document.end();
+  return result;
+}
+
+export async function createAnswerKeyPdf(paper: Paper): Promise<Buffer> {
+  const document = new PDFDocument({ margin: 54 });
+  const result = collectPdf(document);
+  document.fontSize(20).font("Helvetica-Bold").text(`${paper.name} - Answer Key`, { align: "center" });
+  document.moveDown(0.5).fontSize(11).font("Helvetica")
+    .text(`Subject: ${paper.subject}    Maximum Marks: ${paper.totalMarks}`, { align: "center" });
+  document.moveDown();
+
+  paper.questions.forEach((question, index) => {
+    const answer = question.answerKey || question.correctAnswer || "Not provided";
+    document.font("Helvetica-Bold").text(`${index + 1}. `, { continued: true });
+    document.font("Helvetica").text(`${answer} (${question.marks} marks)`);
+    if (question.answerKey && question.correctAnswer) {
+      document.fontSize(10).fillColor("#555555").text(`Marking scheme: ${question.answerKey}`);
+      document.fontSize(11).fillColor("#000000");
+    }
+    document.moveDown(0.7);
   });
+  document.end();
+  return result;
 }
