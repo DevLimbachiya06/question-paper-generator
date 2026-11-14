@@ -23,7 +23,7 @@ def normalize_blueprint(subject, blueprint):
     return blueprint
 
 
-def get_subject_questions(subject, chapters=None):
+def get_subject_questions(subject, chapters=None, topics=None):
     db = get_db()
     query = 'SELECT * FROM questions WHERE subject = ? AND active = 1'
     params = [subject]
@@ -31,6 +31,10 @@ def get_subject_questions(subject, chapters=None):
         placeholders = ', '.join('?' for _ in chapters)
         query += f' AND chapter IN ({placeholders})'
         params.extend(chapters)
+    if topics:
+        placeholders = ', '.join('?' for _ in topics)
+        query += f' AND topic IN ({placeholders})'
+        params.extend(topics)
     rows = db.execute(query, params).fetchall()
     db.close()
     return rows
@@ -39,7 +43,8 @@ def get_subject_questions(subject, chapters=None):
 def generate_question_paper(payload):
     subject = payload.get('subject')
     chapters = payload.get('chapters') or []
-    total_marks = int(payload.get('total_marks', 0) or 0)
+    topics = payload.get('topics') or []
+    total_marks = int(payload.get('max_marks', payload.get('total_marks', 0)) or 0)
     blueprint = normalize_blueprint(subject, payload.get('blueprint'))
 
     if not subject:
@@ -47,7 +52,7 @@ def generate_question_paper(payload):
     if total_marks <= 0:
         raise ValueError('Total marks must be greater than zero.')
 
-    rows = get_subject_questions(subject, chapters)
+    rows = get_subject_questions(subject, chapters, topics)
     if not rows:
         raise ValueError('No active questions are available for the selected subject/chapters.')
 
@@ -70,18 +75,22 @@ def generate_question_paper(payload):
             and r['marks'] == marks_per
             and r['question_id'] not in used_ids
         ]
-        take = min(qcount, len(matches))
-        if take > 0:
-            selected = random.sample(matches, take)
-            chosen.extend(selected)
-            used_ids.update(r['question_id'] for r in selected)
+        random.shuffle(matches)
+        for item in matches[:qcount]:
+            if sum(q['marks'] for q in chosen) + item['marks'] > total_marks:
+                continue
+            chosen.append(item)
+            used_ids.add(item['question_id'])
 
     if sum(item['marks'] for item in chosen) < total_marks:
         extras = [item for item in rows if item['question_id'] not in used_ids]
-        extras = sorted(extras, key=lambda x: (x['marks'], x['question_type']), reverse=True)
+        random.shuffle(extras)
+        extras = sorted(extras, key=lambda x: x['marks'])
         for item in extras:
             if sum(q['marks'] for q in chosen) >= total_marks:
                 break
+            if sum(q['marks'] for q in chosen) + item['marks'] > total_marks:
+                continue
             chosen.append(item)
             used_ids.add(item['question_id'])
 
@@ -94,6 +103,7 @@ def generate_question_paper(payload):
         'subject': subject,
         'total_marks': final_total,
         'chapters': chapters,
+        'topics': topics,
         'blueprint': blueprint,
         'questions': [
             {

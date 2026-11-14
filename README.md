@@ -57,13 +57,14 @@ Then open <http://localhost:5000>. Local runtime data is stored in `data/`. Set 
 
 ## Using the application
 
-1. Select a subject and chapters.
-2. Set the paper name and total marks.
-3. Generate the paper.
-4. Preview it in the browser or download the paper and answer key as Word documents.
-5. Upload additional `.xlsx` question banks when needed.
+1. Select a subject, one or more chapters, and optionally filter by topics. Banks containing only a topic or a single chapter are supported.
+2. Set the paper name and maximum marks.
+3. Edit the blueprint rows, including section name, question type, question count, and marks per question. Add or remove sections as needed.
+4. Generate the paper.
+5. Preview it in the browser or download the paper and answer key as Word documents.
+6. Upload additional `.xlsx` question banks when needed.
 
-The workbook should contain the columns expected by `app/services/importer.py`, including subject, chapter, question type, marks, question text, and optional answer choices/correct answer.
+The workbook must contain `Question_ID`, `Subject`, `Question_Type`, `Marks`, and `Question_Text`. `Chapter` and `Topic` are optional; if `Chapter` is blank or absent, the topic is used as the chapter, or `General` is used when neither is available. Other columns support answer choices, answers, difficulty, source, year, and active status.
 
 ## Project layout
 

@@ -1,5 +1,6 @@
 const subjectSelect = document.getElementById('subjectSelect');
 const chapterList = document.getElementById('chapterList');
+const topicList = document.getElementById('topicList');
 const blueprintList = document.getElementById('blueprintList');
 const generateBtn = document.getElementById('generateBtn');
 const resultBox = document.getElementById('resultBox');
@@ -9,6 +10,15 @@ const previewBtn = document.getElementById('previewBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const answerBtn = document.getElementById('answerBtn');
 const selectAllBtn = document.getElementById('selectAllBtn');
+const selectAllTopicsBtn = document.getElementById('selectAllTopicsBtn');
+const addSectionBtn = document.getElementById('addSectionBtn');
+
+let blueprint = [
+  { name: 'Section A', type: 'MCQ', questions: 20, marks: 1 },
+  { name: 'Section B', type: 'Very Short Answer', questions: 5, marks: 2 },
+  { name: 'Section C', type: 'Short Answer', questions: 6, marks: 3 },
+  { name: 'Section D', type: 'Long Answer', questions: 4, marks: 5 }
+];
 
 async function loadSubjects() {
   const res = await fetch('/api/subjects');
@@ -43,25 +53,39 @@ async function loadChapters(subject) {
   `).join('');
 
   renderBlueprint();
+  loadTopics();
+}
+
+async function loadTopics() {
+  const selectedChapters = Array.from(document.querySelectorAll('#chapterList input:checked'))
+    .map(el => `chapter=${encodeURIComponent(el.value)}`).join('&');
+  const res = await fetch(`/api/topics?subject=${encodeURIComponent(subjectSelect.value)}&${selectedChapters}`);
+  const data = await res.json();
+  topicList.innerHTML = data.topics && data.topics.length
+    ? data.topics.map(topic => `<div class="chapter-item"><label><input type="checkbox" checked value="${topic}" /><span>${topic}</span></label></div>`).join('')
+    : '<p>No topics found for the selected chapters. All topics will be used.</p>';
 }
 
 function renderBlueprint() {
-  const blueprint = [
-    { name: 'Section A', type: 'MCQ', questions: 20, marks: 1 },
-    { name: 'Section B', type: 'Very Short Answer', questions: 5, marks: 2 },
-    { name: 'Section C', type: 'Short Answer', questions: 6, marks: 3 },
-    { name: 'Section D', type: 'Long Answer', questions: 4, marks: 5 }
-  ];
-
   blueprintList.innerHTML = blueprint.map(item => `
     <div class="blueprint-item">
-      <span>${item.name}</span>
-      <strong>${item.questions} × ${item.marks}</strong>
+      <input class="blueprint-name" value="${item.name}" aria-label="Section name" />
+      <input class="blueprint-type" value="${item.type}" aria-label="Question type" />
+      <label>Questions <input class="blueprint-questions" type="number" min="0" value="${item.questions}" /></label>
+      <label>Marks <input class="blueprint-marks" type="number" min="1" value="${item.marks}" /></label>
+      <button class="remove-section" type="button">Remove</button>
     </div>
   `).join('');
+  blueprintList.querySelectorAll('.remove-section').forEach((button, index) => {
+    button.addEventListener('click', () => {
+      blueprint.splice(index, 1);
+      renderBlueprint();
+    });
+  });
 }
 
 subjectSelect.addEventListener('change', () => loadChapters(subjectSelect.value));
+chapterList.addEventListener('change', loadTopics);
 
 selectAllBtn.addEventListener('click', () => {
   const boxes = document.querySelectorAll('#chapterList input[type="checkbox"]');
@@ -69,30 +93,42 @@ selectAllBtn.addEventListener('click', () => {
   boxes.forEach(box => {
     box.checked = !allChecked;
   });
+
+  selectAllTopicsBtn.addEventListener('click', () => {
+    const boxes = document.querySelectorAll('#topicList input[type="checkbox"]');
+    const allChecked = Array.from(boxes).every(box => box.checked);
+    boxes.forEach(box => { box.checked = !allChecked; });
+  });
+
+  addSectionBtn.addEventListener('click', () => {
+    blueprint.push({ name: `Section ${String.fromCharCode(65 + blueprint.length)}`, type: 'MCQ', questions: 1, marks: 1 });
+    renderBlueprint();
+  });
 });
 
 generateBtn.addEventListener('click', async () => {
   const selectedChapters = Array.from(document.querySelectorAll('#chapterList input:checked')).map(el => el.value);
+  const selectedTopics = Array.from(document.querySelectorAll('#topicList input:checked')).map(el => el.value);
   if (!subjectSelect.value || !selectedChapters.length) {
     resultBox.classList.remove('hidden');
     resultBox.innerHTML = '<strong>Please choose a subject and at least one chapter.</strong>';
     return;
   }
 
+  const sections = Array.from(document.querySelectorAll('.blueprint-item')).map(item => ({
+    name: item.querySelector('.blueprint-name').value.trim(),
+    question_type: item.querySelector('.blueprint-type').value.trim(),
+    questions: Number(item.querySelector('.blueprint-questions').value || 0),
+    marks_per_question: Number(item.querySelector('.blueprint-marks').value || 0)
+  }));
   const payload = {
     paper_name: paperNameInput.value || 'Generated Paper',
     subject: subjectSelect.value,
     chapters: selectedChapters,
+    topics: selectedTopics,
     total_marks: Number(totalMarksInput.value || 0),
-    blueprint: {
-      name: 'Default Blueprint',
-      sections: [
-        { name: 'Section A', question_type: 'MCQ', questions: 20, marks_per_question: 1 },
-        { name: 'Section B', question_type: 'Very Short Answer', questions: 5, marks_per_question: 2 },
-        { name: 'Section C', question_type: 'Short Answer', questions: 6, marks_per_question: 3 },
-        { name: 'Section D', question_type: 'Long Answer', questions: 4, marks_per_question: 5 }
-      ]
-    }
+    max_marks: Number(totalMarksInput.value || 0),
+    blueprint: { name: 'Custom Blueprint', sections }
   };
 
   const res = await fetch('/api/generate', {

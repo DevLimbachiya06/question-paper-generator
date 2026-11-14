@@ -88,6 +88,21 @@ def create_app():
         db.close()
         return jsonify({'chapters': [r[0] for r in rows]})
 
+    @app.route('/api/topics')
+    def api_topics():
+        subject = request.args.get('subject', '')
+        chapters = [value for value in request.args.getlist('chapter') if value]
+        db = get_db()
+        query = 'SELECT DISTINCT topic FROM questions WHERE active = 1 AND subject = ? AND topic != ""'
+        params = [subject]
+        if chapters:
+            placeholders = ', '.join('?' for _ in chapters)
+            query += f' AND chapter IN ({placeholders})'
+            params.extend(chapters)
+        rows = db.execute(query + ' ORDER BY topic', params).fetchall()
+        db.close()
+        return jsonify({'topics': [r[0] for r in rows]})
+
     @app.route('/api/generate', methods=['POST'])
     def api_generate():
         payload = request.get_json(force=True, silent=True) or {}

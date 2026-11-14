@@ -24,6 +24,7 @@ REQUIRED_COLUMNS = {
     'Year': 'year',
     'Active': 'active',
 }
+MINIMUM_COLUMNS = {'Question_ID', 'Subject', 'Question_Type', 'Marks', 'Question_Text'}
 
 
 def normalize_value(value):
@@ -46,7 +47,7 @@ def import_question_bank(file_path):
         return {'success': False, 'message': 'Workbook contains no data rows.'}
 
     headers = [normalize_value(h) if h is not None else '' for h in rows[0]]
-    missing = [expected for expected in REQUIRED_COLUMNS if expected not in headers]
+    missing = [expected for expected in MINIMUM_COLUMNS if expected not in headers]
     if missing:
         return {'success': False, 'message': f'Missing required columns: {", ".join(missing)}'}
 
@@ -61,7 +62,12 @@ def import_question_bank(file_path):
             if len(values) < len(headers):
                 values.extend([''] * (len(headers) - len(values)))
 
-            record = {column: values[index_map.get(header, -1)] if header in index_map and index_map[header] < len(values) else '' for header, column in REQUIRED_COLUMNS.items()}
+            record = {
+                column: values[index_map[header]]
+                if header in index_map and index_map[header] < len(values)
+                else ''
+                for header, column in REQUIRED_COLUMNS.items()
+            }
 
             qid = normalize_value(record['question_id'])
             if not qid:
@@ -70,13 +76,16 @@ def import_question_bank(file_path):
 
             subject = normalize_value(record['subject'])
             chapter = normalize_value(record['chapter'])
+            topic = normalize_value(record['topic'])
             qtype = normalize_value(record['question_type'])
             qtext = normalize_value(record['question_text'])
             marks_raw = normalize_value(record['marks'])
 
-            if not subject or not chapter or not qtype or not qtext:
-                errors.append(f'Row {row_num}: Missing required subject/chapter/type/question text')
+            if not subject or not qtype or not qtext:
+                errors.append(f'Row {row_num}: Missing required subject/type/question text')
                 continue
+            if not chapter:
+                chapter = topic or 'General'
 
             try:
                 marks = int(float(str(marks_raw)))
@@ -106,7 +115,7 @@ def import_question_bank(file_path):
                     qid,
                     subject,
                     chapter,
-                    normalize_value(record['topic']),
+                    topic,
                     qtype,
                     marks,
                     normalize_value(record['difficulty']),

@@ -230,6 +230,32 @@ button:hover, .secondary-link:hover {
   color: var(--primary-deep);
 }
 
+.blueprint-item input {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.blueprint-item label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.blueprint-item label input {
+  width: 68px;
+}
+
+.remove-section {
+  padding: 8px 10px;
+  background: #fff1f1;
+  color: var(--danger);
+}
+
 .button-row {
   display: flex;
   align-items: center;

@@ -65,7 +65,7 @@
         </div>
 
         <div class="form-group">
-          <label for="totalMarks">Total Marks</label>
+          <label for="totalMarks">Maximum Marks</label>
           <input id="totalMarks" type="number" value="40" min="1" />
         </div>
       </section>
@@ -78,10 +78,18 @@
         <div id="chapterList" class="chapter-list"></div>
       </section>
 
+      <section class="panel filters-panel">
+        <div class="panel-header">
+          <h3>Topic Selection (optional)</h3>
+          <button class="small-btn" id="selectAllTopicsBtn" type="button">Select all</button>
+        </div>
+        <div id="topicList" class="chapter-list"></div>
+      </section>
+
       <section class="panel blueprint-panel">
         <div class="panel-header">
-          <h3>Suggested Blueprint</h3>
-          <span class="badge">Balanced</span>
+          <h3>Editable Blueprint</h3>
+          <button class="small-btn" id="addSectionBtn" type="button">Add section</button>
         </div>
         <div id="blueprintList" class="blueprint-list"></div>
       </section>
