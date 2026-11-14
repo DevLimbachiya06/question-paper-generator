@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getQuestionBank, getSubjects } from "@/lib/question-bank";
+import { getQuestionBank, getSubjects, subjectMatches } from "@/lib/question-bank";
 
 export const runtime = "nodejs";
 
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const subject = searchParams.get("subject") || "";
   const selectedChapters = searchParams.getAll("chapter");
   const bank = await getQuestionBank();
-  const questions = subject ? bank.filter((question) => question.subject === subject) : bank;
+  const questions = subject ? bank.filter((question) => subjectMatches(question.subject, subject)) : bank;
   const filtered = selectedChapters.length
     ? questions.filter((question) => selectedChapters.includes(question.chapter))
     : questions;

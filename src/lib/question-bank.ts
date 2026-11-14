@@ -6,6 +6,16 @@ import type { Question } from "@/types/question";
 type WorkbookRow = Record<string, unknown>;
 
 const starterWorkbook = path.join(process.cwd(), "CBSE_Class10_Question_Bank_Starter.xlsx");
+const catalogSubjects = ["SST", "Chemistry", "Biology", "SCIENCE"];
+const scienceSubjects = ["science", "physics", "chemistry", "biology"];
+
+export function subjectMatches(questionSubject: string, selectedSubject: string): boolean {
+  const questionValue = questionSubject.trim().toLowerCase();
+  const selectedValue = selectedSubject.trim().toLowerCase();
+  if (selectedValue === "science") return scienceSubjects.includes(questionValue);
+  if (selectedValue === "sst") return ["sst", "social science", "social studies"].includes(questionValue);
+  return questionValue === selectedValue;
+}
 
 function text(value: unknown): string {
   return value == null ? "" : String(value).trim();
@@ -63,5 +73,6 @@ export async function getQuestionBank(): Promise<Question[]> {
 }
 
 export function getSubjects(questions: Question[]): string[] {
-  return [...new Set(questions.map((question) => question.subject))].sort();
+  const existing = [...new Set(questions.map((question) => question.subject))];
+  return [...existing, ...catalogSubjects.filter((subject) => !existing.some((value) => subjectMatches(value, subject)))];
 }

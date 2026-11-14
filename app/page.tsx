@@ -11,6 +11,7 @@ type Paper = {
   totalMarks: number;
   questions: Question[];
   blueprint: BlueprintSection[];
+  adjusted?: boolean;
 };
 
 const questionTypes = ["MCQ", "Very Short Answer", "Short Answer", "Long Answer", "Case Study"];
@@ -128,7 +129,11 @@ export default function HomePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Generation failed.");
       setPaper(data.paper);
-      setMessage("Paper generated successfully.");
+      setSections(data.paper.blueprint);
+      setTotalMarks(data.paper.totalMarks);
+      setMessage(data.paper.adjusted
+        ? "Paper generated with the available questions; the blueprint and total marks were adjusted."
+        : "Paper generated successfully.");
     } catch (error) {
       setPaper(null);
       setMessage(error instanceof Error ? error.message : "Generation failed.");
@@ -238,7 +243,7 @@ export default function HomePage() {
             <div className="space-y-6">
               <section className="panel grid gap-4 p-5 md:grid-cols-3">
                 <label className="text-sm font-bold">Paper name<input className="field mt-2" value={paperName} onChange={(event) => setPaperName(event.target.value)} /></label>
-                <label className="text-sm font-bold">Subject<select className="field mt-2" value={subject} onChange={(event) => changeSubject(event.target.value)}>{subjects.map((value) => <option key={value}>{value}</option>)}</select></label>
+                <label className="text-sm font-bold">Subject<select className="field mt-2" value={subject} onChange={(event) => changeSubject(event.target.value)}>{subjects.map((value) => <option key={value} value={value}>{value === "SCIENCE" ? "SCIENCE (Biology, Chemistry, Physics)" : value}</option>)}</select></label>
                 <label className="text-sm font-bold">Maximum marks<input className="field mt-2" type="number" min={1} value={totalMarks} onChange={(event) => changeTotalMarks(Number(event.target.value))} /></label>
               </section>
 

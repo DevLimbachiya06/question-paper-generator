@@ -79,9 +79,15 @@ Do not use SQLite, `uploads/`, or `generated/` as durable storage on Vercel.
 - `POST /api/pdf` — returns a formatted PDF download
 - `POST /api/answer-key` — returns a formatted answer-key PDF download
 
-The generator requires the blueprint total to exactly match the requested
-maximum marks and returns a user-safe error when there are not enough matching
-questions.
+The generator automatically reduces section counts when the selected bank does
+not contain enough matching questions, then recalculates the blueprint and
+maximum marks instead of failing with an availability error.
+
+The subject catalog includes SST, Chemistry, Biology, and SCIENCE. SCIENCE
+selects questions stored as Physics, Chemistry, Biology, or Science. The
+official CBSE 2025 and 2026 papers are copyrighted, so they are not copied into
+this repository. Use the Excel importer for question banks and answer keys you
+are authorized to use.
 
 ## Workbook format
 
