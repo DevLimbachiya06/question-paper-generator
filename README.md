@@ -24,6 +24,12 @@ questions, 4 five-mark questions, and 3 four-mark case-study questions
 adapted proportionally while preserving the exact total. Editing the blueprint
 automatically updates the maximum marks.
 
+Chapter metadata in the bundled workbook follows the CBSE Class X 2025–26
+curriculum for Mathematics, Science, Social Science, and English Language and
+Literature. The API also exposes the complete syllabus chapter catalog,
+including chapters that do not yet have imported questions; records outside the
+current portion are labeled `Legacy / outside current syllabus`.
+
 ## Local development
 
 Requirements: Node.js 20.9 or newer.

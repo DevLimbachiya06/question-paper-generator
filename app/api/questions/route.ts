@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getQuestionBank, getSubjects, subjectMatches } from "@/lib/question-bank";
+import { getChapters, getQuestionBank, getSubjects, subjectMatches } from "@/lib/question-bank";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     subjects: getSubjects(bank),
-    chapters: [...new Set(questions.map((question) => question.chapter))].sort(),
+    chapters: getChapters(bank, subject),
     topics: [...new Set(filtered.map((question) => question.topic).filter(Boolean))].sort(),
     chapterCounts: Object.fromEntries([...new Set(questions.map((question) => question.chapter))].map((chapter) => [
       chapter,
