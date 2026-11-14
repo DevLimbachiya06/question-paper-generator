@@ -74,5 +74,7 @@ export async function getQuestionBank(): Promise<Question[]> {
 
 export function getSubjects(questions: Question[]): string[] {
   const existing = [...new Set(questions.map((question) => question.subject))];
-  return [...existing, ...catalogSubjects.filter((subject) => !existing.some((value) => subjectMatches(value, subject)))];
+  return [...existing, ...catalogSubjects.filter((subject) => !existing.some(
+    (value) => value.trim().toLowerCase() === subject.toLowerCase(),
+  ))];
 }
