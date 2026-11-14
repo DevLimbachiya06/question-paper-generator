@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paper Preview</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="preview-body">
+  <div class="preview-page">
+    <header class="preview-header">
+      <div>
+        <p class="section-tag">Generated Paper</p>
+        <h1 id="paperTitle">Question Paper</h1>
+      </div>
+      <div class="header-actions">
+        <a id="downloadWord" class="secondary-link" href="#">Download Word</a>
+        <a id="downloadAnswer" class="secondary-link" href="#">Answer Key</a>
+      </div>
+    </header>
+
+    <div id="paperMeta" class="paper-meta"></div>
+    <div id="previewContent" class="preview-content"></div>
+  </div>
+  <script src="{{ url_for('static', filename='preview.js') }}"></script>
+</body>
+</html>

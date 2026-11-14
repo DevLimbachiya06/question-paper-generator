@@ -1,0 +1,622 @@
+QUESTION PAPER GENERATOR — APPLICATION ROADMAP
+=================================================
+
+PROJECT GOAL
+------------
+Build an application that imports an Excel question bank and automatically generates
+professionally formatted question papers in PDF and Word (.docx).
+
+The question bank should store, at minimum:
+- Subject
+- Module / Chapter
+- Question
+- Question Type
+- Marks
+- Difficulty
+- Options (for MCQs)
+- Correct Answer / Answer Key (optional, kept separate from student paper)
+- Explanation / Marking Scheme (optional)
+- Source / Year (optional)
+- Question ID
+
+The generator should allow a teacher to:
+1. Upload an Excel question bank.
+2. Select a subject.
+3. Select one or more chapters/modules.
+4. Set the target maximum marks for the paper.
+5. Define how many questions of each type are required.
+6. Optionally define chapter-wise mark distribution.
+7. Automatically select questions without exceeding the target.
+8. Avoid duplicate questions.
+9. Shuffle questions and/or options.
+10. Preview and manually replace individual questions.
+11. Export the final paper to Word and PDF.
+12. Optionally export a separate answer key / marking scheme.
+
+IMPORTANT CBSE DESIGN NOTE
+--------------------------
+For a real CBSE-style implementation, do not treat "total marks" as the only constraint.
+The generator should support a paper blueprint.
+
+For example:
+- Total marks: 80
+- 1-mark questions: specified count
+- 2-mark questions: specified count
+- 3-mark questions: specified count
+- 4-mark case-study questions: specified count
+- 5-mark questions: specified count
+- Chapter/module coverage
+- Question-type coverage
+- Difficulty distribution
+
+The official CBSE Class X 2025-26 Mathematics Standard sample paper, for example,
+uses 20 one-mark questions, 5 two-mark questions, 6 three-mark questions,
+4 five-mark questions and 3 four-mark case-study questions. Science and English
+use different structures, so the application should store subject-specific blueprints
+rather than hard-code one format.
+
+PHASE 1 — DEFINE THE DATA MODEL
+-------------------------------
+Create an Excel template with columns such as:
+
+Question_ID
+Subject
+Chapter
+Topic
+Question_Type
+Marks
+Difficulty
+Question_Text
+Option_A
+Option_B
+Option_C
+Option_D
+Correct_Answer
+Answer_Key
+Source
+Year
+Active
+
+Recommended Question_Type values:
+- MCQ
+- Assertion-Reason
+- Very Short Answer
+- Short Answer
+- Long Answer
+- Case Study
+- Competency Based
+- Source Based
+- Grammar
+- Writing
+- Literature
+
+For complex questions, allow rich text / images later.
+
+PHASE 2 — BUILD THE EXCEL IMPORTER
+-----------------------------------
+Backend tasks:
+- Read .xlsx files.
+- Validate required columns.
+- Detect missing/invalid marks.
+- Detect empty questions.
+- Detect duplicate Question_IDs.
+- Normalize chapter/type names.
+- Show useful import errors.
+- Store imported questions in the application's database.
+
+Recommended Python libraries:
+- pandas / openpyxl for Excel
+- SQLAlchemy for database access
+
+Initially support Excel only. Add CSV later if useful.
+
+PHASE 3 — DATABASE
+------------------
+For an MVP, SQLite is sufficient.
+
+Suggested tables:
+
+subjects
+chapters
+questions
+question_options
+question_sources
+paper_blueprints
+generated_papers
+generated_paper_questions
+
+A production version can move to PostgreSQL.
+
+PHASE 4 — QUESTION SELECTION ENGINE
+------------------------------------
+This is the core of the application.
+
+Inputs:
+- Target total marks
+- Selected subject
+- Selected chapters
+- Required question types
+- Required number of questions
+- Optional chapter mark distribution
+- Optional difficulty distribution
+- Optional exclusions
+- Randomization seed
+
+Basic algorithm:
+1. Filter by subject.
+2. Filter by selected chapters.
+3. Filter by active questions.
+4. Filter by question type.
+5. Group questions by marks/type/chapter.
+6. Find a combination whose total marks exactly matches the target.
+7. Check blueprint constraints.
+8. Check chapter coverage.
+9. Check difficulty distribution.
+10. Randomly select among valid combinations.
+11. Return the selected questions.
+12. If no valid paper exists, explain exactly which constraint cannot be satisfied.
+
+Do NOT use a simple random loop as the final algorithm.
+
+Better approaches:
+- Dynamic programming for exact mark totals.
+- Constraint satisfaction / optimization for multiple constraints.
+- Integer Linear Programming later if the blueprint becomes complex.
+
+Example:
+Target = 40 marks
+
+The engine might find:
+10 x 1 mark = 10
+5 x 2 marks = 10
+4 x 3 marks = 12
+2 x 4 marks = 8
+Total = 40
+
+The actual blueprint can be different for each subject.
+
+PHASE 5 — BLUEPRINT SYSTEM
+--------------------------
+Create a screen where a teacher can define:
+
+Paper Name
+Subject
+Total Marks
+Duration
+Sections
+
+For each section:
+- Section name
+- Question type
+- Number of questions
+- Marks per question
+- Chapter restrictions
+- Difficulty restrictions
+- Internal choice
+- Optional questions
+- Case-study structure
+
+Example:
+
+Section A
+20 questions × 1 mark
+MCQ / Assertion-Reason
+
+Section B
+5 questions × 2 marks
+
+Section C
+6 questions × 3 marks
+
+Section D
+4 questions × 5 marks
+
+Section E
+3 case studies × 4 marks
+
+The system should NOT force this structure on every subject.
+
+PHASE 6 — CHAPTER/MODULE SELECTION
+-----------------------------------
+UI requirements:
+- Subject dropdown
+- Multi-select chapter list
+- Select All / Clear All
+- Chapter-wise question counts
+- Chapter-wise available marks
+- Optional desired marks per chapter
+
+Example:
+
+[x] Real Numbers
+[x] Polynomials
+[ ] Pair of Linear Equations
+[x] Quadratic Equations
+
+Show:
+Selected chapters: 3
+Available questions: 126
+Available marks: 412
+
+If the selected chapters cannot satisfy the blueprint, warn the user before generation.
+
+PHASE 7 — QUESTION PAPER PREVIEW
+--------------------------------
+Create a live preview before export.
+
+Preview should show:
+- School/institution name
+- Examination name
+- Subject
+- Class
+- Academic year
+- Time allowed
+- Maximum marks
+- General instructions
+- Section headings
+- Question numbering
+- Marks beside questions
+- Internal choices
+- Case-study formatting
+
+Allow:
+- Regenerate
+- Replace question
+- Move question
+- Delete question
+- Add question manually
+- Shuffle
+- Edit question text
+
+PHASE 8 — WORD EXPORT
+---------------------
+Use python-docx.
+
+Create a reusable document template.
+
+Features:
+- Page margins
+- Header/footer
+- School logo
+- Consistent fonts
+- Question numbering
+- Tables where needed
+- Page breaks
+- Section formatting
+- Marks alignment
+- Images/equations support
+- Footer with page numbers
+
+Output:
+Question_Paper_<Subject>_<Date>.docx
+
+PHASE 9 — PDF EXPORT
+--------------------
+Recommended approach:
+1. Generate DOCX.
+2. Convert DOCX to PDF using LibreOffice in a controlled environment.
+
+Alternative:
+Generate PDF directly with ReportLab.
+
+For the first version, DOCX -> PDF is easier for maintaining consistent teacher-friendly formatting.
+
+Output:
+Question_Paper_<Subject>_<Date>.pdf
+
+PHASE 10 — ANSWER KEY
+---------------------
+Add a separate option:
+
+[ ] Generate Answer Key
+[ ] Generate Marking Scheme
+
+The student question paper must not expose:
+- Correct answers
+- Internal answer notes
+- Teacher comments
+
+Export:
+Question_Paper.docx
+Question_Paper.pdf
+Answer_Key.docx
+Answer_Key.pdf
+
+PHASE 11 — FRONTEND
+-------------------
+Recommended MVP stack:
+
+Frontend:
+- React
+- TypeScript
+- Tailwind CSS
+
+Backend:
+- Python
+- FastAPI
+
+Database:
+- SQLite initially
+- PostgreSQL later
+
+File processing:
+- pandas
+- openpyxl
+
+Documents:
+- python-docx
+- LibreOffice / ReportLab
+
+Authentication can be added after the MVP.
+
+Alternative simpler MVP:
+- Streamlit + Python
+
+If the goal is to learn full-stack development and build a portfolio-quality project,
+React + FastAPI is the better long-term architecture.
+
+PHASE 12 — APPLICATION SCREENS
+------------------------------
+1. Dashboard
+2. Question Bank
+3. Import Excel
+4. Question Bank Editor
+5. Blueprint Builder
+6. Chapter Selection
+7. Paper Generator
+8. Paper Preview
+9. Manual Question Replacement
+10. Export
+11. Saved Papers
+12. Answer Key
+13. Settings
+
+PHASE 13 — QUESTION BANK MANAGEMENT
+------------------------------------
+Teachers should be able to:
+- Add question
+- Edit question
+- Delete question
+- Disable question
+- Search questions
+- Filter by chapter
+- Filter by marks
+- Filter by question type
+- Filter by difficulty
+- View source/year
+- Bulk import Excel
+- Bulk export Excel
+
+PHASE 14 — DUPLICATE DETECTION
+------------------------------
+Implement duplicate detection using:
+1. Exact text matching.
+2. Normalized text matching.
+3. Later: semantic similarity using embeddings.
+
+Do not automatically delete possible duplicates.
+Flag them for teacher review.
+
+PHASE 15 — RANDOMIZATION
+------------------------
+Support:
+- Random question selection
+- Random question order
+- Random MCQ option order
+- Reproducible generation using a random seed
+
+Store the seed with generated papers so a paper can be reproduced later.
+
+PHASE 16 — VALIDATION
+---------------------
+Before exporting, run:
+
+[ ] Total marks correct
+[ ] Number of questions correct
+[ ] Every question has marks
+[ ] Every question belongs to allowed chapters
+[ ] Question types satisfy blueprint
+[ ] No duplicate questions
+[ ] Internal choices are valid
+[ ] Required sections are complete
+[ ] No answer key accidentally appears in student paper
+[ ] Page formatting is valid
+
+PHASE 17 — TESTING
+------------------
+Create automated tests for:
+
+- Exact 40-mark generation
+- Exact 80-mark generation
+- Chapter filtering
+- Question-type filtering
+- Duplicate prevention
+- Impossible blueprint detection
+- Insufficient question detection
+- Correct numbering
+- Correct exported marks
+- DOCX generation
+- PDF generation
+
+Also create sample Excel files specifically designed to test edge cases.
+
+PHASE 18 — SECURITY AND PRIVACY
+-------------------------------
+Never upload or commit:
+- Real student information
+- Teacher passwords
+- API keys
+- Database credentials
+- Private question banks
+- Generated answer keys containing sensitive information
+
+Use:
+.env
+.gitignore
+
+If the application is deployed online:
+- Validate uploaded files.
+- Limit file size.
+- Restrict file extensions.
+- Sanitize filenames.
+- Do not execute uploaded files.
+- Store uploaded files outside public directories.
+- Add authentication before allowing private question banks.
+
+PHASE 19 — GITHUB PROJECT STRUCTURE
+-----------------------------------
+Suggested structure:
+
+question-paper-generator/
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── generators/
+│   │   └── main.py
+│   ├── tests/
+│   └── requirements.txt
+├── data/
+│   └── sample_question_bank.xlsx
+├── templates/
+│   ├── question_paper.docx
+│   └── answer_key.docx
+├── docs/
+├── .env.example
+├── .gitignore
+├── README.md
+└── docker-compose.yml
+
+PHASE 20 — DOCKER
+-----------------
+Use Docker for:
+- Backend
+- Frontend
+- Database
+
+For the MVP:
+- frontend container
+- backend container
+- database container
+
+Later add:
+- reverse proxy
+- production database
+- object storage
+
+PHASE 21 — FUTURE AI FEATURES
+-----------------------------
+Do NOT make AI the core of version 1.
+
+Once the deterministic generator works, add AI features:
+
+1. Generate new questions from a chapter.
+2. Classify question type.
+3. Suggest difficulty.
+4. Detect duplicate/near-duplicate questions.
+5. Generate alternative questions.
+6. Generate marking schemes.
+7. Generate explanations.
+8. Tag questions by learning outcome.
+9. Suggest a balanced paper.
+10. Convert teacher-provided questions into the application's format.
+
+AI-generated questions should always be marked as AI-generated and reviewed by a teacher.
+
+PHASE 22 — RECOMMENDED DEVELOPMENT ORDER
+----------------------------------------
+Milestone 1:
+Excel -> Python -> filter questions -> generate exact-mark paper.
+
+Milestone 2:
+Add chapter and question-type filters.
+
+Milestone 3:
+Add blueprint-based selection.
+
+Milestone 4:
+Add database and question-bank management.
+
+Milestone 5:
+Add web interface.
+
+Milestone 6:
+Add DOCX export.
+
+Milestone 7:
+Add PDF export.
+
+Milestone 8:
+Add preview and manual replacement.
+
+Milestone 9:
+Add answer-key generation.
+
+Milestone 10:
+Dockerize the application.
+
+Milestone 11:
+Deploy.
+
+Milestone 12:
+Add AI features.
+
+MVP DEFINITION
+--------------
+The first usable version should do exactly this:
+
+Excel Upload
+    ↓
+Choose Subject
+    ↓
+Choose Chapters
+    ↓
+Choose Total Marks
+    ↓
+Choose Question-Type/Mark Distribution
+    ↓
+Generate
+    ↓
+Preview
+    ↓
+Regenerate / Replace
+    ↓
+Export DOCX
+    ↓
+Export PDF
+
+IMPORTANT DATASET NOTE
+----------------------
+The accompanying Excel file is a starter question-bank dataset based on CBSE Class X
+2025-26 curriculum/sample-paper structures. It is intended for software development
+and testing, not as an official CBSE question bank.
+
+CBSE's official 2025-26 Class X material provides sample question papers and marking
+schemes for Mathematics, Science and English Language & Literature. The official
+Science paper is an integrated Science paper whose Physics questions form only one
+section; therefore, the dataset treats Physics as a development-friendly subject
+category rather than claiming that CBSE Class X has a separate Physics board paper.
+
+For production use, verify the current CBSE syllabus, assessment scheme, sample papers,
+and official marking schemes before creating an exam paper.
+
+FIRST VERSION TARGET
+--------------------
+Build the selection engine first.
+
+If the algorithm cannot reliably produce:
+- exact total marks,
+- selected chapter coverage,
+- requested question types,
+- no duplicates,
+- and a clear error when a paper is impossible,
+
+do not move on to PDF formatting.
+
+The selection engine is the most important technical component of this application.
