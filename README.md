@@ -1,103 +1,97 @@
 # Question Paper Generator
 
-A Flask application for creating CBSE-style question papers from Excel question banks. It supports chapter selection, blueprint-based generation, browser preview, Word export, and answer-key export.
+A Vercel-ready Next.js App Router application for creating balanced question
+papers from Excel question banks. It keeps the original Exam Studio workflow:
+chapter and topic filters, editable blueprints, live preview, and document export.
 
-## Quick start with Docker
+## Stack
 
-Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and run this from the project directory:
+- Next.js 16 App Router and React
+- TypeScript
+- Tailwind CSS
+- ExcelJS for server-side `.xlsx` parsing
+- PDFKit for server-side PDF generation
+- Vercel Functions with the Node.js runtime
 
-```bash
-docker compose up --build -d
-```
-
-Open <http://localhost:5000>. The first startup imports the included `CBSE_Class10_Question_Bank_Starter.xlsx` file. Stop the service with `docker compose down`; your database, uploads, and generated documents remain in the `qpg-data` Docker volume.
-
-View logs or check readiness with:
-
-```bash
-docker compose logs -f app
-docker compose ps
-```
-
-To remove the application and its saved data, run `docker compose down -v`.
-
-### Docker without Compose
-
-```bash
-docker build -t question-paper-generator .
-docker volume create qpg-data
-docker run --name question-paper-generator --rm -p 5000:5000 -v qpg-data:/data question-paper-generator
-```
+The application currently uses the tracked starter workbook as a read-only
+fallback question bank. Uploaded workbooks are parsed securely on the server
+and used for the current browser session.
 
 ## Local development
 
-Requirements: Python 3.12 or newer.
-
-PowerShell:
+Requirements: Node.js 20.9 or newer.
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python app.py
+npm install
+Copy-Item .env.example .env.local
+npm run dev
 ```
 
-macOS/Linux:
+Open <http://localhost:3000>.
 
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python app.py
+Useful checks:
+
+```powershell
+npm run typecheck
+npm run build
 ```
 
-Then open <http://localhost:5000>. Local runtime data is stored in `data/`. Set `DATA_DIR` to use another location and set `SECRET_KEY` before deploying anywhere shared.
+## Vercel deployment
 
-## Using the application
+1. Push the repository to GitHub.
+2. Import the repository into Vercel.
+3. Keep the framework preset as **Next.js**.
+4. Add the variables from `.env.example` in Project Settings.
+5. Deploy.
 
-1. Select a subject, one or more chapters, and optionally filter by topics. The selector shows the number of active questions available for each chapter/topic. Banks containing only a topic or a single chapter are supported.
-2. Set the paper name and maximum marks.
-3. Edit the blueprint rows, including section name, question type, question count, and marks per question. Add or remove sections as needed.
-4. Generate the paper.
-5. Preview it in the browser or download the paper and answer key as Word documents.
-6. Upload additional `.xlsx` question banks when needed.
+`vercel.json` pins the Functions region and gives the API routes a 60-second
+maximum duration. The PDF endpoint streams the generated PDF directly instead
+of writing to the function filesystem.
 
-The workbook must contain `Question_ID`, `Subject`, `Question_Type`, `Marks`, and `Question_Text`. `Chapter` and `Topic` are optional; if `Chapter` is blank or absent, the topic is used as the chapter, or `General` is used when neither is available. Other columns support answer choices, answers, difficulty, source, year, and active status.
+## Production data persistence
 
-## Project layout
+The current no-database mode is useful for a demo, but uploaded files are
+intentionally session-scoped. For a multi-user production deployment:
+
+1. Provision a Postgres database such as Neon.
+2. Add its connection string as `DATABASE_URL`.
+3. Replace the fallback workbook repository in `src/lib/question-bank.ts` with
+   a database repository and migrations.
+4. Store uploaded workbooks and generated documents in private object storage
+   such as Vercel Blob.
+5. Add authentication and owner checks before exposing question banks or answer
+   keys.
+
+Do not use SQLite, `uploads/`, or `generated/` as durable storage on Vercel.
+
+## API routes
+
+- `GET /api/questions` — subjects, chapters, topics, and counts
+- `POST /api/upload` — validates and parses an `.xlsx` workbook
+- `POST /api/generate` — validates the blueprint and generates a paper
+- `POST /api/pdf` — returns a formatted PDF download
+
+The generator requires the blueprint total to exactly match the requested
+maximum marks and returns a user-safe error when there are not enough matching
+questions.
+
+## Workbook format
+
+Required columns:
 
 ```text
-app.py                  Local compatibility launcher
-app/__init__.py         Flask application and routes
-app/services/            Database, import, blueprint, and generation logic
-app/templates/           HTML templates
-app/static/              Browser assets
-tests/                   Smoke tests
-Dockerfile               Production container image
-docker-compose.yml       Persistent local Docker setup
+Question_ID, Subject, Question_Type, Marks, Question_Text
 ```
 
-## Testing
+Optional columns include `Chapter`, `Topic`, `Difficulty`, `Option_A` through
+`Option_D`, `Correct_Answer`, `Answer_Key`, `Source`, `Year`, and `Active`.
 
-```bash
-python -m unittest discover -v
-```
+## Legacy Flask implementation
 
-The GitHub Actions workflow runs the same test suite on every push and pull request.
-
-## Configuration
-
-Copy `.env.example` to `.env` for local configuration. Docker Compose supplies `DATA_DIR=/data` and persists it in a named volume. Never commit real secrets or generated documents.
-
-## Troubleshooting
-
-- Port `5000` is busy: change the left side of `5000:5000` in `docker-compose.yml`.
-- Docker Desktop is not running: start it, then rerun `docker compose up --build -d`.
-- No subjects appear: verify the starter workbook exists, or upload a valid `.xlsx` workbook from the home page.
-- A clean reset is needed: run `docker compose down -v`, then start the service again. This deletes all saved application data.
+The original Flask implementation remains in the repository for reference and
+local compatibility. The Vercel deployment entrypoint is now the Next.js
+application in the root `app/` directory.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](./LICENSE).

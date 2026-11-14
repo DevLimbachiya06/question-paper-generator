@@ -11,3 +11,6 @@ uploads/
 data/
 generated/
 *.log
+node_modules
+.next/
+*.tsbuildinfo
