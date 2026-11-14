@@ -10,6 +10,8 @@ export type Question = {
   options: string[];
   correctAnswer: string;
   answerKey: string;
+  source?: string;
+  year?: string;
 };
 
 export type BlueprintSection = {

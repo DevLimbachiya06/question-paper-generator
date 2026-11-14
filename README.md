@@ -89,6 +89,10 @@ official CBSE 2025 and 2026 papers are copyrighted, so they are not copied into
 this repository. Use the Excel importer for question banks and answer keys you
 are authorized to use.
 
+The bundled workbook also includes authorized PDF-derived records from the
+provided ScienceX, MathsX, and EnglishX resources, with their source names
+stored in the `Source` column.
+
 ## Workbook format
 
 Required columns:

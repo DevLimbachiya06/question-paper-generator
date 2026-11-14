@@ -39,6 +39,8 @@ function parseRows(rows: WorkbookRow[]): Question[] {
         options,
         correctAnswer: text(row.Correct_Answer),
         answerKey: text(row.Answer_Key),
+        source: text(row.Source),
+        year: text(row.Year),
       };
     })
     .filter((question) => question.subject && question.type && question.text && question.marks > 0);
