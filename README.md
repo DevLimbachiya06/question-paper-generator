@@ -116,6 +116,9 @@ The original Flask implementation is archived under [`legacy/flask/`](./legacy/f
 for reference. It is not part of the Vercel deployment; the deployment entrypoint
 is the Next.js application in the root [`app/`](./app/) directory.
 
+Its Docker setup and initialization instructions are documented in
+[`legacy/flask/README.md`](./legacy/flask/README.md).
+
 ## License
 
 MIT. See [LICENSE](./LICENSE).
